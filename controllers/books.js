@@ -30,3 +30,25 @@ exports.modifyBook = (req, res, next) => {
     .then(() => res.status(200).json({ message: "Votre livre a été modifié" }))
     .catch((error) => res.status(400).json({ error }));
 };
+
+exports.postBook = (req, res, next) => {
+  const bookObject = JSON.parse(req.body.book);
+  delete bookObject._id;
+  delete bookObject._userId;
+  const book = new Book({
+    ...bookObject,
+    userId: req.auth.userId,
+    imageUrl: `${req.protocol}://${req.get("host")}/images/${
+      req.file.filename
+    }`,
+  });
+
+  book
+    .save()
+    .then(() => {
+      res.status(201).json({ message: "Votre livre a été enregistré" });
+    })
+    .catch((error) => {
+      res.status(400).json({ error });
+    });
+};
