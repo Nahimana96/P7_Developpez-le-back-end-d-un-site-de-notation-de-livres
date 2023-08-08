@@ -6,7 +6,22 @@ exports.getAllBooks = (req, res, next) => {
     .catch((error) => res.status(400).json({ error }));
 };
 exports.getOneBook = (req, res, next) => {
-  Book.findOne({ _id: req.params.id })
-    .then((book) => res.status(200).json(book))
-    .catch((error) => res.status(404).json({ error }));
+  if (req.params.id === "bestrating") {
+    Book.find()
+
+      .then((data) =>
+        res.json(
+          data
+            .sort((a, b) => {
+              return b.averageRating - a.averageRating;
+            })
+            .slice(0, 3)
+        )
+      )
+      .catch((error) => res.status(401).json({ error }));
+  } else {
+    Book.findOne({ _id: req.params.id })
+      .then((book) => res.status(200).json(book))
+      .catch((error) => res.status(404).json({ error }));
+  }
 };
