@@ -97,3 +97,26 @@ exports.deleteBook = (req, res, next) => {
       res.status(400).json({ error });
     });
 };
+
+exports.postRate = (req, res, next) => {
+  Book.findOne({ _id: req.params.id })
+    .then((book) => {
+      book.ratings.map((rateInfo) => {
+        if (rateInfo.userId === req.auth.userId) {
+          res.status(401).json({ errors: "vous avez déjà noté ce livre" });
+          return;
+        } else {
+          book.ratings.push({
+            userId: req.auth.userId,
+            grade: req.body.rating,
+          });
+          // book.averageRating = sum(book.rating.grade) / book.rating.length;
+          book
+            .save()
+            .then(() => res.status(200).json(book))
+            .catch((error) => res.status(400).json({ error }));
+        }
+      });
+    })
+    .catch((error) => res.status(400).json({ error }));
+};
