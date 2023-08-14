@@ -101,22 +101,26 @@ exports.deleteBook = (req, res, next) => {
 exports.postRate = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
-      book.ratings.map((rateInfo) => {
-        if (rateInfo.userId === req.auth.userId) {
-          res.status(401).json({ errors: "vous avez déjà noté ce livre" });
-          return;
-        } else {
-          book.ratings.push({
-            userId: req.auth.userId,
-            grade: req.body.rating,
-          });
-          // book.averageRating = sum(book.rating.grade) / book.rating.length;
-          book
-            .save()
-            .then(() => res.status(200).json(book))
-            .catch((error) => res.status(400).json({ error }));
-        }
+      let isInRatingsList = book.ratings.some((rateInfo) => {
+        return rateInfo.userId === req.auth.userId;
       });
+
+      if (isInRatingsList) {
+        res.status(401).json({ message: "vous avez déjà noté ce livre" });
+      } else {
+        book.ratings.push({
+          userId: req.auth.userId,
+          grade: req.body.rating,
+        });
+        let sumOfRatings = book.ratings
+          .map((rate) => rate.grade)
+          .reduce((acc, curr) => acc + curr);
+        book.averageRating = sumOfRatings / book.ratings.length;
+        book
+          .save()
+          .then(() => res.status(200).json(book))
+          .catch((error) => res.status(400).json({ error }));
+      }
     })
-    .catch((error) => res.status(400).json({ error }));
+    .catch(() => res.status(400).json({ message: "erreur" }));
 };
