@@ -112,18 +112,24 @@ exports.postRate = (req, res, next) => {
       if (isInRatingsList) {
         res.status(401).json({ message: "vous avez déjà noté ce livre" });
       } else {
-        book.ratings.push({
-          userId: req.auth.userId,
-          grade: req.body.rating,
-        });
-        let sumOfRatings = book.ratings
-          .map((rate) => rate.grade)
-          .reduce((acc, curr) => acc + curr);
-        book.averageRating = sumOfRatings / book.ratings.length;
-        book
-          .save()
-          .then(() => res.status(200).json(book))
-          .catch((error) => res.status(400).json({ error }));
+        if (req.body.rating >= 0 && req.body.rating <= 5) {
+          book.ratings.push({
+            userId: req.auth.userId,
+            grade: req.body.rating,
+          });
+          let sumOfRatings = book.ratings
+            .map((rate) => rate.grade)
+            .reduce((acc, curr) => acc + curr);
+          book.averageRating = sumOfRatings / book.ratings.length;
+          book
+            .save()
+            .then(() => res.status(200).json(book))
+            .catch((error) => res.status(400).json({ error }));
+        } else {
+          res
+            .status(400)
+            .json({ message: "Votre note doit être comprise entre 0 et 5" });
+        }
       }
     })
     .catch(() => res.status(400).json({ message: "erreur" }));
