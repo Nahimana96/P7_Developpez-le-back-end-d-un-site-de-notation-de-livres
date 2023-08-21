@@ -61,22 +61,26 @@ exports.postBook = async (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
-  const book = new Book({
-    ...bookObject,
-    userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get("host")}/images/${
-      req.file.filename
-    }`,
-  });
-
-  book
-    .save()
-    .then(() => {
-      res.status(201).json({ message: "Votre livre a été enregistré" });
-    })
-    .catch((error) => {
-      res.status(400).json({ error });
+  if (!req.file) {
+    res.status(400).json({ message: "Vous devez ajouter une image" });
+  } else {
+    const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+      imageUrl: `${req.protocol}://${req.get("host")}/images/${
+        req.file.filename
+      }`,
     });
+
+    book
+      .save()
+      .then(() => {
+        res.status(201).json({ message: "Votre livre a été enregistré" });
+      })
+      .catch((error) => {
+        res.status(400).json({ error });
+      });
+  }
 };
 
 exports.deleteBook = (req, res, next) => {
