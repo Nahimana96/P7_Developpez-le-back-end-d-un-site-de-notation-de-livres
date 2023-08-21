@@ -1,4 +1,5 @@
 const Book = require("../models/books");
+const fs = require("fs");
 
 exports.getAllBooks = (req, res, next) => {
   Book.find()
@@ -56,7 +57,7 @@ exports.modifyBook = (req, res, next) => {
     });
 };
 
-exports.postBook = (req, res, next) => {
+exports.postBook = async (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
@@ -84,13 +85,16 @@ exports.deleteBook = (req, res, next) => {
       if (book.userId != req.auth.userId) {
         res.status(401).json({ message: "Not authorized" });
       } else {
-        Book.deleteOne({ _id: req.params.id })
-          .then(() =>
-            res
-              .status(200)
-              .json({ message: "Ce livre a été supprimé avec succes" })
-          )
-          .catch((error) => res.status(400).json({ error }));
+        const filename = book.imageUrl.split("/images/")[1];
+        fs.unlink(`images/${filename}`, () => {
+          Book.deleteOne({ _id: req.params.id })
+            .then(() =>
+              res
+                .status(200)
+                .json({ message: "Ce livre a été supprimé avec succes" })
+            )
+            .catch((error) => res.status(400).json({ error }));
+        });
       }
     })
     .catch((error) => {
@@ -108,18 +112,24 @@ exports.postRate = (req, res, next) => {
       if (isInRatingsList) {
         res.status(401).json({ message: "vous avez déjà noté ce livre" });
       } else {
-        book.ratings.push({
-          userId: req.auth.userId,
-          grade: req.body.rating,
-        });
-        let sumOfRatings = book.ratings
-          .map((rate) => rate.grade)
-          .reduce((acc, curr) => acc + curr);
-        book.averageRating = sumOfRatings / book.ratings.length;
-        book
-          .save()
-          .then(() => res.status(200).json(book))
-          .catch((error) => res.status(400).json({ error }));
+        if (req.body.rating >= 0 && req.body.rating <= 5) {
+          book.ratings.push({
+            userId: req.auth.userId,
+            grade: req.body.rating,
+          });
+          let sumOfRatings = book.ratings
+            .map((rate) => rate.grade)
+            .reduce((acc, curr) => acc + curr);
+          book.averageRating = sumOfRatings / book.ratings.length;
+          book
+            .save()
+            .then(() => res.status(200).json(book))
+            .catch((error) => res.status(400).json({ error }));
+        } else {
+          res
+            .status(400)
+            .json({ message: "Votre note doit être comprise entre 0 et 5" });
+        }
       }
     })
     .catch(() => res.status(400).json({ message: "erreur" }));
