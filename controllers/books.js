@@ -57,7 +57,7 @@ exports.modifyBook = (req, res, next) => {
     });
 };
 
-exports.postBook = (req, res, next) => {
+exports.postBook = async (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
